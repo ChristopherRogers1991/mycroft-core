@@ -29,7 +29,9 @@ from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import kill
+from mycroft.util import play_wav
 from mycroft.util.log import getLogger
+from mycroft.util.audio_test import record
 
 __author__ = 'aatchison + jdorleans'
 
@@ -73,6 +75,11 @@ class EnclosureReader(Thread):
         if "mycroft.stop" in data:
             self.client.emit(Message("mycroft.stop"))
             kill(['mimic'])  # TODO - Refactoring in favor of Mycroft Stop
+
+        if "mic.test" in data:
+            self.emitter.emit(Message("speak", metadata={'utterance': "Testing microphone for five seconds."}))
+            record("/tmp/test.wav", 5)
+            play_wav("/tmp/test.wav")
 
     def stop(self):
         self.alive = False
