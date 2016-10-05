@@ -23,7 +23,7 @@ import abc
 import os.path
 import re
 from adapt.intent import Intent
-from os.path import join, dirname, splitext, isdir
+from os.path import join, dirname, splitext, isdir, expanduser
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
@@ -38,6 +38,7 @@ PRIMARY_SKILLS = ['intent', 'wake']
 BLACKLISTED_SKILLS = ["send_sms", "media"]
 SKILLS_BASEDIR = dirname(__file__)
 THIRD_PARTY_SKILLS_DIR = "/opt/mycroft/third_party"
+USER_WHITELIST = join(expanduser('~'), '.mycroft/skills/whitelist')
 
 MainModule = '__init__'
 
@@ -143,9 +144,13 @@ def load_skills(emitter, skills_root=SKILLS_BASEDIR):
         if skill['name'] in PRIMARY_SKILLS:
             load_skill(skill, emitter)
 
+    with open(USER_WHITELIST, 'r') as f:
+        whitelist = set(f.read().splitlines())
+    whitelist -= set(PRIMARY_SKILLS)
+    whitelist -= set(BLACKLISTED_SKILLS)
+
     for skill in skills:
-        if (skill['name'] not in PRIMARY_SKILLS and
-                skill['name'] not in BLACKLISTED_SKILLS):
+        if skill['name'] in whitelist:
             load_skill(skill, emitter)
 
 
@@ -261,3 +266,7 @@ class MycroftSkill(object):
     def is_stop(self):
         passed_time = time.time() - self.stop_time
         return passed_time < self.stop_threshold
+
+if __name__ == "__main__":
+    for skill in get_skills(SKILLS_BASEDIR):
+        print skill['name']
